@@ -1,0 +1,39 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/LibraryV2/main/redzLib"))()
+local progButton = Instance.new("TextButton")
+progButton.Size, progButton.Position, progButton.BackgroundColor3 = UDim2.new(0, 100, 0, 50), UDim2.new(0, 10, 0, 10), Color3.fromRGB(255, 0, 0)
+progButton.Text, progButton.TextColor3, progButton.Parent = "PROG", Color3.fromRGB(0, 0, 0), game.Players.LocalPlayer.PlayerGui
+
+local Window, selectedStyle, speed = Library:CreateWindow("PROG", "Auto Level Script", Color3.fromRGB(255, 0, 0)), "None", 1
+Window.Visible = false
+local MainTab = Window:CreateTab("Main")
+
+local function createControlButton(text, pos, func)
+    local btn = Instance.new("TextButton")
+    btn.Size, btn.Position, btn.BackgroundColor3, btn.Text, btn.TextColor3 = UDim2.new(0, 30, 0, 30), pos, Color3.fromRGB(100, 100, 100), text, Color3.fromRGB(255, 255, 255)
+    btn.MouseButton1Click:Connect(func)
+    btn.Parent = Window.Frame
+    return btn
+end
+
+local closeButton = createControlButton("X", UDim2.new(1, -70, 0, 0), function() Window.Visible = false end)
+local minimizeButton = createControlButton("-", UDim2.new(1, -40, 0, 0), function() Window.Frame.Visible, maximizeButton.Visible = false, true end)
+local maximizeButton = createControlButton("+", UDim2.new(1, -40, 0, 0), function() Window.Frame.Visible, maximizeButton.Visible = true, false end)
+maximizeButton.Visible = false
+
+MainTab:CreateDropdown("Select Style", {"Sword", "Combat Style", "Gun", "Fruit"}, function(value) selectedStyle = value end)
+MainTab:CreateSlider("Auto Level Speed", 1, 7, function(value) speed = value end)
+
+function AutoLevel()
+    local player = game.Players.LocalPlayer
+    while selectedStyle ~= "None" do
+        wait(1 / speed)
+        local tool = player.Backpack:FindFirstChild(selectedStyle) or player.Character:FindFirstChild(selectedStyle)
+        if player.Health < 20 then break end
+        if tool then tool:Activate() else print(selectedStyle .. " not found.") end
+    end
+end
+
+MainTab:CreateButton("Start Auto Level", function() if selectedStyle ~= "None" then spawn(AutoLevel) end end)
+MainTab:CreateButton("Stop Auto Level", function() selectedStyle = "None" end)
+
+progButton.MouseButton1Click:Connect(function() Window.Visible = true end)
