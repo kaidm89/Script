@@ -5,17 +5,22 @@ local progButton = Instance.new("TextButton")
 progButton.Size, progButton.Position, progButton.BackgroundColor3 = UDim2.new(0, 100, 0, 50), UDim2.new(0, 10, 0, 10), Color3.fromRGB(255, 0, 0)
 progButton.Text, progButton.TextColor3, progButton.Parent = "PROG", Color3.fromRGB(0, 0, 0), game.Players.LocalPlayer.PlayerGui
 
-local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998", PremiumOnly = false})
-local selectedStyle, speed = "None", 1
+local LevelTab = Window:MakeTab({Name = "Level", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 
-MainTab:AddDropdown({
-    Name = "Select Style",
-    Default = "None",
-    Options = {"Sword", "Combat Style", "Gun", "Fruit"},
-    Callback = function(value) selectedStyle = value end
+local selectedStyle, speed, autoLevelEnabled = "Combat Style", 1, false
+
+LevelTab:AddToggle({
+    Name = "Auto Level",
+    Default = false,
+    Callback = function(value)
+        autoLevelEnabled = value
+        if autoLevelEnabled then
+            spawn(AutoLevel)
+        end
+    end
 })
 
-MainTab:AddSlider({
+LevelTab:AddSlider({
     Name = "Auto Level Speed",
     Min = 1,
     Max = 7,
@@ -26,25 +31,30 @@ MainTab:AddSlider({
     Callback = function(value) speed = value end
 })
 
+LevelTab:AddDropdown({
+    Name = "Select Style",
+    Default = "Combat Style",
+    Options = {"Sword", "Combat Style", "Gun", "Fruit"},
+    Callback = function(value) selectedStyle = value end
+})
+
 function AutoLevel()
     local player = game.Players.LocalPlayer
-    while selectedStyle ~= "None" do
+    while autoLevelEnabled and selectedStyle ~= "None" do
         wait(1 / speed)
+        
+        local level = player.Level.Value
+        if level < 5 then
+            print("Selected Quest: Level 1 Quest")
+        else
+            print("Selected Quest: Level 5 Quest")
+        end
+
         local tool = player.Backpack:FindFirstChild(selectedStyle) or player.Character:FindFirstChild(selectedStyle)
-        if player.Health < 20 then break end
+        if player.Health < 20 or not autoLevelEnabled then break end
         if tool then tool:Activate() else print(selectedStyle .. " not found.") end
     end
 end
-
-MainTab:AddButton({
-    Name = "Start Auto Level",
-    Callback = function() if selectedStyle ~= "None" then spawn(AutoLevel) end end
-})
-
-MainTab:AddButton({
-    Name = "Stop Auto Level",
-    Callback = function() selectedStyle = "None" end
-})
 
 progButton.MouseButton1Click:Connect(function()
     Window:Toggle(true)
