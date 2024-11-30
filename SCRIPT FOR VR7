@@ -1,0 +1,138 @@
+// استيراد مكتبة Discord.js
+const { Client, Intents, MessageActionRow, MessageButton, Permissions } = require('discord.js');
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES] });
+
+// عند جاهزية البوت
+client.once('ready', () => {
+    console.log(`تم تسجيل الدخول كبوت: ${client.user.tag}`);
+});
+
+// عند إضافة البوت إلى سيرفر جديد
+client.on('guildCreate', async (guild) => {
+    const owner = await guild.fetchOwner();
+
+    // رسالة القوانين
+    const rulesMessage = {
+        content: `**مرحباً ${owner.user.username}، شكراً لإضافة البوت!**\n\nيرجى قراءة شروط الاستخدام والموافقة عليها لتفعيل البوت:\n\n1. يجب منح البوت رتبة مسؤول (Administrator).\n2. عدم استخدام البوت أثناء الصيانة.\n3. تحديث البوت بعد انتهاء الصيانة.\n4. قبول جميع التعاريف لتفعيل البوت بشكل صحيح.`,
+        components: [
+            new MessageActionRow().addComponents(
+                new MessageButton()
+                    .setCustomId('accept_rules')
+                    .setLabel('قبول الشروط')
+                    .setStyle('SUCCESS'),
+                new MessageButton()
+                    .setCustomId('reject_rules')
+                    .setLabel('رفض الشروط')
+                    .setStyle('DANGER')
+            )
+        ]
+    };
+
+    // إرسال الرسالة إلى مالك السيرفر
+    try {
+        await owner.send(rulesMessage);
+    } catch (error) {
+        console.error('خطأ في إرسال الرسالة إلى مالك السيرفر:', error);
+    }
+});
+
+// التعامل مع الأزرار
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    const { customId, guild, user } = interaction;
+
+    if (customId === 'accept_rules') {
+        // تنفيذ عند قبول الشروط
+        const adminRoleName = 'MYBOT';
+        let adminRole = guild.roles.cache.find(role => role.name === adminRoleName);
+
+        if (!adminRole) {
+            adminRole = await guild.roles.create({
+                name: adminRoleName,
+                color: 'BLUE',
+                permissions: [Permissions.FLAGS.ADMINISTRATOR]
+            });
+        }
+
+        // منح الرتبة للشخص الذي أضاف البوت
+        const member = guild.members.cache.get(user.id);
+        if (member) {
+            await member.roles.add(adminRole);
+        }
+
+        // إنشاء الغرف المطلوبة
+        const helperChannelName = '『مساعد_الاعضاء』';
+        const updatesChannelName = '『اخبار_بوت』';
+
+        if (!guild.channels.cache.find(channel => channel.name === helperChannelName)) {
+            await guild.channels.create(helperChannelName, { type: 'GUILD_TEXT' });
+        }
+        if (!guild.channels.cache.find(channel => channel.name === updatesChannelName)) {
+            await guild.channels.create(updatesChannelName, { type: 'GUILD_TEXT' });
+        }
+
+        await interaction.reply({
+            content: 'تم قبول الشروط! تم إعداد البوت بنجاح.',
+            ephemeral: true
+        });
+
+        // إرسال رسالة في غرفة مساعد الأعضاء
+        const helperChannel = guild.channels.cache.find(channel => channel.name === helperChannelName);
+        if (helperChannel) {
+            await helperChannel.send({
+                content: 'مرحباً بالجميع! يمكنكم الآن استخدام البوت من خلال الأزرار التالية:',
+                components: [
+                    new MessageActionRow().addComponents(
+                        new MessageButton()
+                            .setCustomId('android_section')
+                            .setLabel('أندرويد')
+                            .setStyle('PRIMARY'),
+                        new MessageButton()
+                            .setCustomId('ios_section')
+                            .setLabel('آيفون')
+                            .setStyle('PRIMARY')
+                    )
+                ]
+            });
+        }
+
+    } else if (customId === 'reject_rules') {
+        // تنفيذ عند رفض الشروط
+        await interaction.reply({
+            content: 'تم رفض الشروط. لن يتم تفعيل البوت حتى تقبل الشروط.',
+            ephemeral: true
+        });
+    }
+
+    // أقسام الأندرويد والآيفون
+    else if (customId === 'android_section') {
+        await interaction.reply({
+            content: 'تم اختيار قسم الأندرويد. يتم الآن إعداد الغرفة الخاصة بك...',
+            ephemeral: true
+        });
+
+        const androidChannel = await guild.channels.create(`『اندرويد』-${user.username}`, { type: 'GUILD_TEXT' });
+
+        androidChannel.send({
+            content: 'مرحباً بك في قسم الأندرويد!\n\nالقسم الأول: تحميل التطبيقات:\n- فليكس: [رابط](https://discord.com/channels/1077537385446912121/1274494067409158206)\n- كوديكس: [رابط](https://discord.com/channels/1077537385446912121/1274485334524035183)\n- دلتا: [رابط](https://discord.com/channels/1077537385446912121/1274485660337836234)\n- ارسيوس: [رابط](https://discord.com/channels/1077537385446912121/1274485791778799789)\n\nالقسم الثاني: سكربتات:\n- [سكربتات](https://discord.com/channels/1077537385446912121/1274485520340226159)\n\nالقسم الثالث: حلول المشاكل:\n- إذا واجهتك مشكلة، يمكنك التواصل مع الدعم.',
+        });
+    } else if (customId === 'ios_section') {
+        await interaction.reply({
+            content: 'تم اختيار قسم الآيفون. يتم الآن إعداد الغرفة الخاصة بك...',
+            ephemeral: true
+        });
+
+        const iosChannel = await guild.channels.create(`『ايفون』-${user.username}`, { type: 'GUILD_TEXT' });
+
+        iosChannel.send({
+            content: 'مرحباً بك في قسم الآيفون!\n\nالقسم الأول: إعداد DNS:\n- [DNS1](https://nhutgg.com/download2/start-download2/NextDNS.mobileconfig)\n- [DNS2](https://raw.githubusercontent.com/gamerobloxscarlet/iosusescarlet/main/scarlet%20dns%20(update).mobileconfig)\n\nالقسم الثاني: تحميل التطبيقات:\n- [VR7](https://discord.com/channels/1077537385446912121/1274486221267013674)\n\nالقسم الثالث: حلول المشاكل:\n- إذا واجهتك مشكلة، يمكنك التواصل مع الدعم.',
+        });
+    }
+});
+
+// تسجيل الدخول
+client.login('YOUR_DISCORD_BOT_TOKEN');
+
+// اشبك سعد اشبك لا تنسه تضيف التوكن في كل خانه كاتب فيها YOUR_DISCORD_BOT_TOKEN
+// اشبك اشبك شابك اشبك سعددددددد
